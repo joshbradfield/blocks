@@ -7,7 +7,10 @@ svgDiv.setAttribute('class', 'svgDiv');
 rootEl.appendChild(svgDiv);
 var svg = SVG(svgDiv);
 
+
+
 var rect = svg.rect(100, 100).attr({ fill: '#f06' });
+
 
 addDragListener = (element) => {
     element.on('mousedown.drag', startDrag);
@@ -66,6 +69,7 @@ addDragListener = (element) => {
     }
 
 }
+
 
 addDragListener(rect);
 
