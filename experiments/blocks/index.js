@@ -20,7 +20,7 @@ var workspace = SVG(workspaceDiv);
 
 // Creates a block element
 // maybe this should be controllable from css?
-createBlock = (svg) => {
+function createBlock(svg){
     return svg.rect(100, 25).addClass('standardBlock');
 };
 
