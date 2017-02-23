@@ -17,3 +17,15 @@ html, body {
 .divDraggable {
     position: fixed;
 }
+
+.elementBeingDragged {
+    cursor : pointer !important;
+    
+}
+
+
+.standardBlock {
+    fill: #ff0066 ; 
+    stroke : black;
+    cursor : move;
+}
