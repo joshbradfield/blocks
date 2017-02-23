@@ -1,7 +1,5 @@
 # Experiments
 
-Listed in reverse date order :
-
 <!-- TOC depthFrom:2 -->
 
 - [Block](#block)
