@@ -11,8 +11,9 @@
 
 ## Block
 
-| Date Created | 2017/02/22 |
-| Demonstration | Dragging a single SVG element | 
+Date Created : 2017/02/22
+
+Demonstration : Dragging a single SVG element
 
 
 ### Known Bugs
@@ -23,8 +24,9 @@
 
 ## Blocks
 
-| Date Created | 2017/02/22 |
-| Demonstration | Dragging blocks from a "toolbox" into a "workspace" | 
+Date Created: 2017/02/22
+
+Demonstration: Dragging blocks from a "toolbox" into a "workspace"
 
 
 ### Known Bugs
