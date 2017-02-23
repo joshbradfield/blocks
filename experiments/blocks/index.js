@@ -74,7 +74,7 @@ function relativePoint(e, element) {
 // Enables drag on a SVG element inside a SVG block
 function enableDragOnSVGElement(element) {
     element.on('mousedown.drag', startDrag);
-    element.on('touchdown.drag', startDrag);
+    element.on('touchstart.drag', startDrag);
 
     var grabPoint = 0;
 
@@ -96,6 +96,9 @@ function enableDragOnSVGElement(element) {
 
         // Bring the block to the forground
         element.front();
+
+        // apply draggable css
+        element.addClass('elementBeingDragged');
 
         // add drag and end events to window
         SVG.on(window, 'mousemove.drag', captureDrag);
@@ -136,7 +139,7 @@ function enableDragOnSVGElement(element) {
 //          type: func(svgInstance)
 function enableDragFromToolbox(element, createNew) {
     element.on('mousedown.drag', startDrag);
-    element.on('touchdown.drag', startDrag);
+    element.on('touchstart.drag', startDrag);
 
     var newDiv, newSVG, newElement;
 
@@ -156,15 +159,16 @@ function enableDragFromToolbox(element, createNew) {
 
         // Create new Div with SVG and recreate the block.
         newDiv = document.createElement('div');
-        newDiv.setAttribute('class', 'divDraggable');
+        newDiv.setAttribute('class', 'divDraggable elementBeingDragged');
         newSVG = SVG(newDiv).size(element.width(), element.height());
         newElement = createNew(newSVG);
+        
 
         document.body.appendChild(newDiv);
-        element.fire('dragFromToolbox-started');
+        element.fire('dragFromToolbox-started', {});
 
 
-        // add drag and end events to window
+        //add drag and end events to window
         SVG.on(window, 'mousemove.dragFromToolbox', captureDrag);
         SVG.on(window, 'touchmove.dragFromToolbox', captureDrag);
         SVG.on(window, 'mouseup.dragFromToolbox', endDrag);
