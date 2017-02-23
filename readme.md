@@ -1,6 +1,6 @@
 # Blocks
 
-We're making blocks
+We're making blocks.
 
 ## Roadmap:
 
