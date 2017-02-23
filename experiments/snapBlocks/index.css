@@ -1,18 +1,17 @@
 html, body {
     height : 100%;
     width : 100%;
+    padding: 0;
+    margin: 0;
 }
 
 #root {
     height : 100%;
     width : 100%;
+    display: block;
+    flex-direction: column;
 }
 
-
-.svgDiv {
-    height : 100%;
-    width : 100%;
-}
 
 .divDraggable {
     position: fixed;
@@ -22,6 +21,25 @@ html, body {
     cursor : pointer !important;
     pointer-events: none !important;
 }
+
+#workspace {
+    margin-left: 10px; 
+    margin-right: 10px;
+    height: 100%;
+    display: block;
+    flex-grow : 1;
+    
+    background: lightcyan;
+}
+
+#toolbox {  
+    height : 50px;
+    width: 100%;
+    margin : 0;
+    display: block;
+    background-color: #DDDDDD;
+}
+
 
 .standardBlock {
     fill: #ff0066 ; 

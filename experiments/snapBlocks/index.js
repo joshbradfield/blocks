@@ -4,81 +4,36 @@
 
     The main point is that the toolbox and the workspace are not really related.
     This means you can separate the toolbox from the workspace!
-
 */
 
 // Define global elements
 var rootEl = document.getElementById("root");
 var toolboxEl = document.getElementById("toolbox");
+var workspaceEl = document.getElementById("workspace");
 
 var blocks = [];
 var dragging = false;
 var blockUnderMouse;
 
-// Create workspace SVG
-var workspaceDiv = document.createElement('div');
-workspaceDiv.setAttribute('class', 'svgDiv workspaceDiv');
-var workspace = SVG(workspaceDiv);
-rootEl.appendChild(workspaceDiv);
+// List of test blocks
 
-// Creates a block element
-// maybe this should be controllable from css?
-function createBlock(svg){
-    return svg.rect(100, 25).addClass('standardBlock');
-};
+
+// Create a workspace
+var workspace = new Workspace(workspaceEl, [[new StandardBlock, new StandardBlock, new StandardBlock], [new StandardBlock, new StandardBlock]]);
 
 // Create a copy of the standard block, and add it to our toolbox div.
-var blockDiv = document.createElement('div');
-blockDiv.setAttribute('class', 'svgDiv blockDiv');
-var standardBlock_toolbox = createBlock(SVG(blockDiv).size(100, 25));
-toolboxEl.appendChild(blockDiv);
+var toolBox = new Toolbox(toolboxEl, new StandardBlock);
 
-// Enable dragging of the standard block from the tool box
-enableDragFromToolbox(standardBlock_toolbox, createBlock);
-
-standardBlock_toolbox.on('dragFromToolbox-started', () => {
-    dragging = true;
-    console.log('started');
-});
-
-
-// Insert a new standard block when dragged in from the toolbox
-// todo : if not in workspace area, DONT ADD.
-standardBlock_toolbox.on('dragFromToolbox-finished', (ev) => {
-    
-    dragging = false;
+toolBox.block.element.on('dragFromToolbox-finished', (ev) => {
 
     // extract variables passed to the event
     var e = ev.detail.e;
-    var createBlock = ev.detail.createBlock;
+    var block = ev.detail.newBlock;
+    var grabPoint = ev.detail.grabPoint;
 
-    // create a new copy of the block in the workspace
-    newBlock = createBlock(workspace);
-    var newPoint = relativePoint(e, newBlock);
+    // move the block in the workspace
+    workspace.addBlock(block, {x: e.screenX, y: e.screenY}, grabPoint);
 
-    // place the block under the mousepointer
-    var delx = newPoint.x - grabPoint.x;
-    var dely = newPoint.y - grabPoint.y;
-    newBlock.dmove(delx, dely);
-
-    // enable dragging on this new block so we can drag it around the workspace
-    enableDragOnSVGElement(newBlock);
-
-    newBlock.on('mouseenter', function() {
-        blockUnderMouse = this;
-        console.log(blockUnderMouse);
-    });
-
-    newBlock.on('mouseleave', function() {
-        if(this === blockUnderMouse) blockUnderMouse = null;
-        console.log(blockUnderMouse);
-    });
-
-    // add to array and start linked list.
-    var topBlock = {next: newBlock};
-    newBlock.previous = topBlock;
-
-    blocks.push(topBlock);
     console.log(blocks);
 
 });
@@ -101,7 +56,7 @@ function relativePoint(e, element) {
 // Enables drag on a SVG element inside a SVG block
 function enableDragOnSVGElement(element) {
     element.on('mousedown.drag', startDrag);
-    element.on('touchdown.drag', startDrag);
+    element.on('touchstart.drag', startDrag);
 
     var grabPoint = 0;
 
@@ -160,77 +115,158 @@ function enableDragOnSVGElement(element) {
     return element;
 }
 
-// Enables an element out of a toolbox 
-//    Creates a copy of the element which is dragged around the screen.
-//    createNew is the function that must be called to create the svg element.
-//          type: func(svgInstance)
-function enableDragFromToolbox(element, createNew) {
-    element.on('mousedown.drag', startDrag);
-    element.on('touchdown.drag', startDrag);
 
-    var newDiv, newSVG, newElement;
+function Workspace(parentElement, blocks) {
+    this.svg = SVG(parentElement);
+    this.blockTree = blocks ? blocks.map((a) => arrayToLinkedList(a)) : [];
+    this.spacingStandard = 2;
 
-    function startDrag(e) {
 
-        // check for left button
-        if ((e.type == 'click' || e.type == 'mousedown' || e.type == 'mousemove')
-            && ((e.which || e.buttons) != 1)) {
-            return;
-        }
+    function arrayToLinkedList (array) {
+        var top = {top : true, array, length : array.length};
+        var previous = top;
+        array.map((element) => {
+            previous.next = element;
+            element.previous = previous;
+            previous = element;
+        });
 
-        // Prevent default behaviour
-        e.preventDefault();
-        e.stopPropagation();
+        return top;
+    }
 
-        grabPoint = relativePoint(e, element);
-
-        // Create new Div with SVG and recreate the block.
-        newDiv = document.createElement('div');
-        newDiv.setAttribute('class', 'divDraggable elementBeingDragged');
-        newSVG = SVG(newDiv).size(element.width(), element.height());
-        newElement = createNew(newSVG);
+    this.addBlock = (block, screenPoint) => {
+        // Add block to list
         
 
-        document.body.appendChild(newDiv);
-        element.fire('dragFromToolbox-started', {});
 
-
-        //add drag and end events to window
-        SVG.on(window, 'mousemove.dragFromToolbox', captureDrag);
-        SVG.on(window, 'touchmove.dragFromToolbox', captureDrag);
-        SVG.on(window, 'mouseup.dragFromToolbox', endDrag);
-        SVG.on(window, 'touchend.dragFromToolbox', endDrag);
-
-        captureDrag(e);
+        this.redraw();
     }
 
-    function captureDrag(e) {
-        var newPoint = relativePoint(e, newElement);
-        var delx = newPoint.x - grabPoint.x;
-        var dely = newPoint.y - grabPoint.y;
-
-        var rect = newDiv.getBoundingClientRect();
-
-        newDiv.setAttribute('style', 'top:' + (rect.top + dely) + 'px;' + 'left:' + (rect.left + delx) + 'px;');
-        element.fire('dragFromToolbox-moved', { e, element, grabPoint, newPoint });
-
+    this.copyBlock = (block) => {
+        
     }
 
-    function endDrag(e) {
-        captureDrag(e);
-
-        // unbind events
-        SVG.off(window, 'mousemove.dragFromToolbox')
-        SVG.off(window, 'touchmove.dragFromToolbox')
-        SVG.off(window, 'mouseup.dragFromToolbox')
-        SVG.off(window, 'touchend.dragFromToolbox')
-
-
-        document.body.removeChild(newDiv);
-
-        element.fire('dragFromToolbox-finished', { e, createBlock, grabPoint });
+     this.redraw = () => {
+        this.clearBlocks();
+        var height = 0;
+        this.blockTree.map((list) => {
+            var group = this.svg.group();
+            group.x = list.x || 0;
+            group.y = list.y || 0;
+            list.group = group;
+            while(list.next){
+                list = list.next;
+                var e = list.draw(group).move(0,height);
+                height += e.height() + this.spacingStandard;
+            }
+        });
     }
 
-    return element;
+    this.clearBlocks = () => {
+        this.svg.clear();
+    }
+
+    this.redraw();
+};
+
+function StandardBlock() {
+    this.classname = 'standardBlock';
+
+    this.draw = (svg) => {
+        this.element = svg.rect(100, 25).addClass(this.classname);
+        return this.element;
+    }
+
+    this.copy = () => {
+        return new StandardBlock();
+    }
 }
+
+
+function Toolbox(div, block) {
+    this.svg = SVG(div);
+    this.block = block;
+    this.block.draw(this.svg);
+
+    enableDragFromToolbox(this.block);
+
+    // Enables an element out of a toolbox 
+    //    Creates a copy of the element which is dragged around the screen.
+    //    createNew is the function that must be called to create the svg element.
+    //          type: func(svgInstance)
+    function enableDragFromToolbox(block) {
+        var element = block.element;
+
+        var newDiv, newSVG, newElement, newBlock;
+
+        var captureDrag = (e) => {
+            var newPoint = relativePoint(e, newElement);
+            var delx = newPoint.x - grabPoint.x;
+            var dely = newPoint.y - grabPoint.y;
+
+            var rect = newDiv.getBoundingClientRect();
+
+            newDiv.setAttribute('style', 'top:' + (rect.top + dely) + 'px;' + 'left:' + (rect.left + delx) + 'px;');
+            element.fire('dragFromToolbox-moved', { e, element, grabPoint, newPoint });
+
+        }
+
+        var startDrag = (e) => {
+
+            // check for left button
+            if ((e.type == 'click' || e.type == 'mousedown' || e.type == 'mousemove')
+                && ((e.which || e.buttons) != 1)) {
+                return;
+            }
+
+            // Prevent default behaviour
+            e.preventDefault();
+            e.stopPropagation();
+
+            grabPoint = relativePoint(e, block.element);
+
+            // Create new Div with SVG and recreate the block.
+            newDiv = document.createElement('div');
+            newDiv.setAttribute('class', 'divDraggable elementBeingDragged');
+            newSVG = SVG(newDiv).size(element.width(), element.height());
+            newBlock = block.copy();
+            newElement = newBlock.draw(newSVG);
+
+            document.body.appendChild(newDiv);
+            element.fire('dragFromToolbox-started', {});
+
+
+            //add drag and end events to window
+            SVG.on(window, 'mousemove.dragFromToolbox', captureDrag);
+            SVG.on(window, 'touchmove.dragFromToolbox', captureDrag);
+            SVG.on(window, 'mouseup.dragFromToolbox', endDrag);
+            SVG.on(window, 'touchend.dragFromToolbox', endDrag);
+
+            captureDrag(e);
+        }
+
+        var endDrag = (e) => {
+            captureDrag(e);
+
+            // unbind events
+            SVG.off(window, 'mousemove.dragFromToolbox')
+            SVG.off(window, 'touchmove.dragFromToolbox')
+            SVG.off(window, 'mouseup.dragFromToolbox')
+            SVG.off(window, 'touchend.dragFromToolbox')
+
+
+            document.body.removeChild(newDiv);
+
+            element.fire('dragFromToolbox-finished', { e, newBlock, grabPoint });
+        }
+
+        
+        element.on('mousedown.drag', startDrag);
+        element.on('touchstart.drag', startDrag);
+
+        return block;
+    }
+}
+
+
 
