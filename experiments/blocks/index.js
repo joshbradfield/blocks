@@ -50,7 +50,11 @@ addDragListener = (element) => {
         e.preventDefault();
         e.stopPropagation();
 
+        // Find the position of the mouse relative to the block
         grabPoint = relativePoint(e, element);
+
+        // Bring the block to the forground
+        element.front();
 
         // add drag and end events to window
         SVG.on(window, 'mousemove.drag', captureDrag);
