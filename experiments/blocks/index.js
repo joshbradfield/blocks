@@ -1,8 +1,16 @@
 
 
 createBlock = (svg) => {
-    return svg.rect(100, 25).attr({ fill: '#f06' });
+    return svg.rect(100, 25).attr({ fill: '#f06' , stroke : 'black'});
 };
+
+function relativePoint(e, element) {
+        var p = element.point(e.screenX, e.screenY);
+        p.x -= element.x();
+        p.y -= element.y();
+        return p;
+}
+
 
 addDragListener = (element) => {
     element.on('mousedown.drag', startDrag);
@@ -11,7 +19,7 @@ addDragListener = (element) => {
     var grabPoint = 0;
 
     function captureDrag(e) {
-        var newPoint = relativePoint(e);
+        var newPoint = relativePoint(e, element);
         var delx = newPoint.x - grabPoint.x;
         var dely = newPoint.y - grabPoint.y;
         element.dmove(delx, dely);
@@ -28,13 +36,6 @@ addDragListener = (element) => {
         SVG.off(window, 'touchend.drag')
 
         element.fire('drag-finished', { e, element, grabPoint });
-    }
-
-    function relativePoint(e) {
-        var p = element.point(e.screenX, e.screenY);
-        p.x -= element.x();
-        p.y -= element.y();
-        return p;
     }
 
     function startDrag(e) {
@@ -62,6 +63,7 @@ addDragListener = (element) => {
 
     return element;
 }
+
 
 addToolBoxDragListener = (element, createNew) => {
     element.on('mousedown.drag', startDrag);
@@ -97,13 +99,6 @@ addToolBoxDragListener = (element, createNew) => {
         element.fire('dragFromToolbox-finished', { e, createBlock, grabPoint });
     }
 
-    function relativePoint(e, newElement) {
-        var p = newElement.point(e.screenX, e.screenY);
-        p.x -= newElement.x();
-        p.y -= newElement.y();
-        return p;
-    }
-
     function startDrag(e) {
 
         // check for left button
@@ -128,7 +123,6 @@ addToolBoxDragListener = (element, createNew) => {
 
         newElement = createNew(newSVG);
 
-        element = newElement;
                 
         // add drag and end events to window
         SVG.on(window, 'mousemove.dragFromToolbox', captureDrag);
@@ -167,3 +161,18 @@ addDragListener(rect);
 
 
 addToolBoxDragListener(rectToolbox, createBlock);
+rectToolbox.on('dragFromToolbox-finished', (ev) => {
+    var e = ev.detail.e;
+    var createBlock = ev.detail.createBlock;
+
+    newBlock = createBlock(workspace);
+    var newPoint = relativePoint(e, newBlock);
+
+    var delx = newPoint.x - grabPoint.x;
+    var dely = newPoint.y - grabPoint.y;
+
+    newBlock.dmove(delx, dely);
+
+    addDragListener(newBlock);
+
+});
