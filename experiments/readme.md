@@ -6,7 +6,8 @@
     - [Known Bugs](#known-bugs)
 - [Blocks](#blocks)
     - [Known Bugs](#known-bugs-1)
-
+- [snapBlocks](#snapBlocks)
+    - [Known Bugs](#known-bugs-2)
 <!-- /TOC -->
 
 ## Block
@@ -21,6 +22,7 @@ Demonstration : Dragging a single SVG element
 - Does not handle :
     - Zoom
     - Update on Scroll
+    - touch
 
 ## Blocks
 
@@ -34,4 +36,19 @@ Demonstration: Dragging blocks from a "toolbox" into a "workspace"
 - Does not handle :
     - Zoom
     - Update on Scroll
+    - Touch
 
+## snapBlocks
+
+Date Created: 2017/02/23
+
+Demonstration: Dragging blocks from a "toolbox" into a "workspace" and snapping them togeather to form a stack
+
+**WIP**
+
+### Known Bugs
+
+- Does not handle :
+    - Zoom
+    - Update on Scroll
+    - Touch
