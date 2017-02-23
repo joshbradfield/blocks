@@ -11,3 +11,7 @@ We're making blocks
   iii. Storyboard
 3.  => 1
 
+
+## todo
+
+- Disuss licence
