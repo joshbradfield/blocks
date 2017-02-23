@@ -1,0 +1,30 @@
+html, body {
+    height : 100%;
+    width : 100%;
+}
+
+#root {
+    height : 100%;
+    width : 100%;
+}
+
+
+.svgDiv {
+    height : 100%;
+    width : 100%;
+}
+
+.divDraggable {
+    position: fixed;
+}
+
+.elementBeingDragged {
+    cursor : pointer !important;
+    pointer-events: none !important;
+}
+
+.standardBlock {
+    fill: #ff0066 ; 
+    stroke : black;
+    cursor : move;
+}
