@@ -1,7 +1,5 @@
 # Experiments
 
-Listed in reverse date order :
-
 <!-- TOC depthFrom:2 -->
 
 - [Block](#block)
@@ -13,8 +11,9 @@ Listed in reverse date order :
 
 ## Block
 
-| Date Created | 2017/02/22 |
-| Demonstration | Dragging a single SVG element | 
+Date Created : 2017/02/22
+
+Demonstration : Dragging a single SVG element
 
 
 ### Known Bugs
@@ -25,8 +24,9 @@ Listed in reverse date order :
 
 ## Blocks
 
-| Date Created | 2017/02/22 |
-| Demonstration | Dragging blocks from a "toolbox" into a "workspace" | 
+Date Created: 2017/02/22
+
+Demonstration: Dragging blocks from a "toolbox" into a "workspace"
 
 
 ### Known Bugs
