@@ -15,8 +15,8 @@ var toolboxEl = document.getElementById("toolbox");
 // Create workspace SVG
 var workspaceDiv = document.createElement('div');
 workspaceDiv.setAttribute('class', 'svgDiv workspaceDiv');
-rootEl.appendChild(workspaceDiv);
 var workspace = SVG(workspaceDiv);
+rootEl.appendChild(workspaceDiv);
 
 // Creates a block element
 // maybe this should be controllable from css?
@@ -24,19 +24,18 @@ function createBlock(svg){
     return svg.rect(100, 25).addClass('standardBlock');
 };
 
-// Create Block toolbox SVG
+// Create a copy of the standard block, and add it to our toolbox div.
 var blockDiv = document.createElement('div');
 blockDiv.setAttribute('class', 'svgDiv blockDiv');
+var standardBlock_toolbox = createBlock(SVG(blockDiv).size(100, 25));
 toolboxEl.appendChild(blockDiv);
-var block = SVG(blockDiv).size(100, 25);
-var rectToolbox = createBlock(block);
 
-// Enable dragging from tool box
-enableDragFromToolbox(rectToolbox, createBlock);
+// Enable dragging of the standard block from the tool box
+enableDragFromToolbox(standardBlock_toolbox, createBlock);
 
 // Insert a new standard block when dragged in from the toolbox
 // todo : if not in workspace area, DONT ADD.
-rectToolbox.on('dragFromToolbox-finished', (ev) => {
+standardBlock_toolbox.on('dragFromToolbox-finished', (ev) => {
     // extract variables passed to the event
     var e = ev.detail.e;
     var createBlock = ev.detail.createBlock;
@@ -53,7 +52,10 @@ rectToolbox.on('dragFromToolbox-finished', (ev) => {
     // enable dragging on this new block so we can drag it around the workspace
     enableDragOnSVGElement(newBlock);
 
+    
+
 });
+
 
 
 // Code in the background
@@ -138,34 +140,6 @@ function enableDragFromToolbox(element, createNew) {
 
     var newDiv, newSVG, newElement;
 
-    function captureDrag(e) {
-        var newPoint = relativePoint(e, newElement);
-        var delx = newPoint.x - grabPoint.x;
-        var dely = newPoint.y - grabPoint.y;
-
-        var rect = newDiv.getBoundingClientRect();
-
-        newDiv.setAttribute('style', 'top:' + (rect.top + dely) + 'px;' + 'left:' + (rect.left + delx) + 'px;');
-        element.fire('dragFromToolbox-moved', { e, element, grabPoint, newPoint });
-
-
-    }
-
-    function endDrag(e) {
-        captureDrag(e);
-
-        // unbind events
-        SVG.off(window, 'mousemove.dragFromToolbox')
-        SVG.off(window, 'touchmove.dragFromToolbox')
-        SVG.off(window, 'mouseup.dragFromToolbox')
-        SVG.off(window, 'touchend.dragFromToolbox')
-
-
-        document.body.removeChild(newDiv);
-
-        element.fire('dragFromToolbox-finished', { e, createBlock, grabPoint });
-    }
-
     function startDrag(e) {
 
         // check for left button
@@ -183,12 +157,11 @@ function enableDragFromToolbox(element, createNew) {
         // Create new Div with SVG and recreate the block.
         newDiv = document.createElement('div');
         newDiv.setAttribute('class', 'divDraggable');
-        document.body.appendChild(newDiv);
         newSVG = SVG(newDiv).size(element.width(), element.height());
-
-        element.fire('dragFromToolbox-started');
-
         newElement = createNew(newSVG);
+
+        document.body.appendChild(newDiv);
+        element.fire('dragFromToolbox-started');
 
 
         // add drag and end events to window
@@ -198,6 +171,33 @@ function enableDragFromToolbox(element, createNew) {
         SVG.on(window, 'touchend.dragFromToolbox', endDrag);
 
         captureDrag(e);
+    }
+
+    function captureDrag(e) {
+        var newPoint = relativePoint(e, newElement);
+        var delx = newPoint.x - grabPoint.x;
+        var dely = newPoint.y - grabPoint.y;
+
+        var rect = newDiv.getBoundingClientRect();
+
+        newDiv.setAttribute('style', 'top:' + (rect.top + dely) + 'px;' + 'left:' + (rect.left + delx) + 'px;');
+        element.fire('dragFromToolbox-moved', { e, element, grabPoint, newPoint });
+
+    }
+
+    function endDrag(e) {
+        captureDrag(e);
+
+        // unbind events
+        SVG.off(window, 'mousemove.dragFromToolbox')
+        SVG.off(window, 'touchmove.dragFromToolbox')
+        SVG.off(window, 'mouseup.dragFromToolbox')
+        SVG.off(window, 'touchend.dragFromToolbox')
+
+
+        document.body.removeChild(newDiv);
+
+        element.fire('dragFromToolbox-finished', { e, createBlock, grabPoint });
     }
 
     return element;
