@@ -19,10 +19,11 @@ var blockUnderMouse;
 
 
 // Create a workspace
-var workspace = new Workspace(workspaceEl, [[new StandardBlock, new StandardBlock, new StandardBlock], [new StandardBlock, new StandardBlock]]);
+var workspace = new Workspace(workspaceEl, [[new StandardBlock(), new StandardBlock("2"), new StandardBlock("3")]]);
+
 
 // Create a copy of the standard block, and add it to our toolbox div.
-var toolBox = new Toolbox(toolboxEl, new StandardBlock);
+var toolBox = new Toolbox(toolboxEl, new StandardBlock("toolBox"));
 
 toolBox.block.element.on('dragFromToolbox-finished', (ev) => {
 
@@ -32,9 +33,24 @@ toolBox.block.element.on('dragFromToolbox-finished', (ev) => {
     var grabPoint = ev.detail.grabPoint;
 
     // move the block in the workspace
-    workspace.addBlock(block, {x: e.screenX, y: e.screenY}, grabPoint);
+    workspace.addBlock(block, {x: e.clientX, y: e.clientY}, grabPoint);
 
-    console.log(blocks);
+
+});
+
+toolBox.block.element.on('dragFromToolbox-moved', (ev) => {
+    var e = ev.detail.e;
+
+    var b = workspace.findTouchingBlock(e.clientX, e.clientY);
+
+    if(b) {
+        b.element.addClass('highlighted');
+
+        setTimeout(() => {
+            b.element.removeClass('highlighted');
+        }, 1000);
+    }
+
 
 });
 
@@ -44,13 +60,10 @@ toolBox.block.element.on('dragFromToolbox-finished', (ev) => {
 
 
 // Takes a mouse event and an svg element and returns the position of the mouse relative to the element
-//   e type: mouse event object (uses screenX, screenY )
+//   e type: mouse event object (uses clientX, clientY )
 //   element type: svg element
 function relativePoint(e, element) {
-    var p = element.point(e.screenX, e.screenY);
-    p.x -= element.x();
-    p.y -= element.y();
-    return p;
+    return element.point(e.clientX, e.clientY);
 }
 
 // Enables drag on a SVG element inside a SVG block
@@ -134,10 +147,57 @@ function Workspace(parentElement, blocks) {
         return top;
     }
 
-    this.addBlock = (block, screenPoint) => {
+    this.findTouchingBlock = (x,y) => {
+        var matched = null;
+        //like map but with escape? 
+        this.blockTree.map((list) => {
+            //If not inside group, skip
+            var p = list.group.point(x,y);
+
+            if((matched !== null) || (!list.group.inside(p.x, p.y))) {
+                return;
+            }
+
+
+            while(list.next) {
+                list = list.next;
+                // if touching :
+                p = list.element.point(x,y);
+                if(list.element.inside(p.x, p.y)) {
+                    matched = list;
+                    return;
+                }
+            }
+        });
+        return matched;
+    }
+
+    this.addBlock = (block, screenPoint, grabPoint) => {
         // Add block to list
         
+        var t = this.findTouchingBlock(screenPoint.x, screenPoint.y);
+        console.log(t);
+        if(t) {
+            var n = t.next;
+            t.next = block.copy();
+            t.next.previous = t;
+            t.next.next = n;
+            if(n) n.previous = block;
+        } else {
+            var g = {next: block.copy()};
+            g.next.previous = g;
 
+            var p = this.svg.point(screenPoint.x, screenPoint.y);
+            console.log(p);
+            console.log(grabPoint);
+
+            g.x = p.x - grabPoint.x;
+            g.y = p.y - grabPoint.y;
+
+            console.log(g);
+
+            this.blockTree.push(g);
+        }
 
         this.redraw();
     }
@@ -148,11 +208,15 @@ function Workspace(parentElement, blocks) {
 
      this.redraw = () => {
         this.clearBlocks();
-        var height = 0;
         this.blockTree.map((list) => {
-            var group = this.svg.group();
-            group.x = list.x || 0;
-            group.y = list.y || 0;
+            var height = 0;
+            var group = this.svg.nested();
+            console.log("Drawing Group");
+            group.move(list.x || 0,list.y || 0);
+            
+            console.log("  x" + list.x + " y" + list.y);
+            console.log("  x" + group.x() + " y" + group.y());
+
             list.group = group;
             while(list.next){
                 list = list.next;
@@ -169,16 +233,25 @@ function Workspace(parentElement, blocks) {
     this.redraw();
 };
 
-function StandardBlock() {
+function StandardBlock(text) {
     this.classname = 'standardBlock';
+    this.text = text || "Standard Block";
 
     this.draw = (svg) => {
-        this.element = svg.rect(100, 25).addClass(this.classname);
-        return this.element;
+        svg = svg.nested();
+        this.element = svg; 
+
+        svg.addClass(this.classname);
+        var t = svg.text(this.text).move(4, 3);
+        svg.rect(t.length() > (100-8)? t.length() + 8 : 100, 25).back();
+
+        svg.size(svg.rbox().width,svg.rbox().height);
+
+        return svg;
     }
 
     this.copy = () => {
-        return new StandardBlock();
+        return new StandardBlock(this.text);
     }
 }
 

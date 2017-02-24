@@ -9,7 +9,6 @@ html, body {
     height : 100%;
     width : 100%;
     display: block;
-    flex-direction: column;
 }
 
 
@@ -27,7 +26,6 @@ html, body {
     margin-right: 10px;
     height: 100%;
     display: block;
-    flex-grow : 1;
     
     background: lightcyan;
 }
@@ -40,6 +38,12 @@ html, body {
     background-color: #DDDDDD;
 }
 
+
+.highlighted {
+    fill: #00ff66 !important; 
+    stroke : black;
+    cursor : move;
+}
 
 .standardBlock {
     fill: #ff0066 ; 
