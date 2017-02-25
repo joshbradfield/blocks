@@ -136,9 +136,11 @@ function Workspace(parentElement, blocks) {
 
 
     function arrayToLinkedList (array) {
-        var top = {top : true, array, length : array.length};
+        var top = {array, length : array.length};
         var previous = top;
+        top.top = top;
         array.map((element) => {
+            element.top = top;
             previous.next = element;
             element.previous = previous;
             previous = element;
@@ -148,28 +150,43 @@ function Workspace(parentElement, blocks) {
     }
 
     this.findTouchingBlock = (x,y) => {
-        var matched = null;
-        //like map but with escape? 
-        this.blockTree.map((list) => {
-            //If not inside group, skip
-            var p = list.group.point(x,y);
+        var match = null;
 
-            if((matched !== null) || (!list.group.inside(p.x, p.y))) {
-                return;
+        function matched(block) {
+            // check which stack is on top.
+            if(match) {
+                if(match.top.group.position() > block.top.group.position())
+                    return;
             }
 
+            match = block;
+        }
+
+        //like map but with escape? 
+        this.blockTree.map((list) => {
+            var p = list.group.point(x,y);
+
+            //If not inside group, skip
+            if(!list.group.inside(p.x, p.y)) {
+                return;
+            }
 
             while(list.next) {
                 list = list.next;
                 // if touching :
                 p = list.element.point(x,y);
                 if(list.element.inside(p.x, p.y)) {
-                    matched = list;
-                    return;
+                    // touching
+                    matched(list);
+                    break;
+                } else if(p.y < 0) {
+                    // In the middle
+                    if(p.x <= list.element.x()) matched(list);
+                    break;
                 }
             }
         });
-        return matched;
+        return match;
     }
 
     this.addBlock = (block, screenPoint, grabPoint) => {
@@ -178,14 +195,21 @@ function Workspace(parentElement, blocks) {
         var t = this.findTouchingBlock(screenPoint.x, screenPoint.y);
         console.log(t);
         if(t) {
+
+            // Determine if we add above or below.
+            var p = t.element.point(screenPoint.x, screenPoint.y);
+            if(p.y < t.element.height()/2) t = t.previous;
             var n = t.next;
             t.next = block.copy();
+            t.next.top = t.top;
             t.next.previous = t;
             t.next.next = n;
             if(n) n.previous = block;
         } else {
             var g = {next: block.copy()};
             g.next.previous = g;
+            g.next.top = g;
+            g.top = g;
 
             var p = this.svg.point(screenPoint.x, screenPoint.y);
             console.log(p);
@@ -232,6 +256,7 @@ function Workspace(parentElement, blocks) {
 
     this.redraw();
 };
+
 
 function StandardBlock(text) {
     this.classname = 'standardBlock';
