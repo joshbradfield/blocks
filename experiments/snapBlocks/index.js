@@ -309,6 +309,10 @@ function Workspace(parentElement, blocks) {
             // If the insertion point is above the half way line of the block, insert above!
             if (r.position == 'top') t = t.previous;
 
+            if(t.top === t) {
+                t.y -= block.element.height() + this.spacingStandard;
+            }
+
             // Insert the block in the linked list
             var n = t.next;
             t.next = block.copy();
