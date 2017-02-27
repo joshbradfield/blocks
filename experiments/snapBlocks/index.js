@@ -34,6 +34,22 @@ class Box {
         return Box.overlaps(this, b2);
     }
 
+    translate(x, y) {
+        return new Box(
+            this.x1 + x,
+            this.y1 + y,
+            this.x2 + x,
+            this.y2 + y
+        );
+    }
+
+    transformWithElement(e) {
+        var a = e.point(this.x1, this.y1);
+        var b = e.point(this.x2, this.y2);
+
+        return new Box(a.x, a.y, b.x, b.y);
+    }
+
 }
 
 Box.combine = function (b1, b2) {
@@ -74,8 +90,11 @@ toolBox.block.element.on('dragFromToolbox-finished', (ev) => {
     var block = ev.detail.newBlock;
     var grabPoint = ev.detail.grabPoint;
 
+    
+    var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
+
     // move the block in the workspace
-    workspace.addBlock(block, { x: e.clientX, y: e.clientY }, grabPoint);
+    workspace.addBlock(block, offset);
 
 
 });
@@ -88,25 +107,40 @@ toolBox.block.element.on('dragFromToolbox-moved', (ev) => {
     var block = ev.detail.newBlock;
     var grabPoint = ev.detail.grabPoint;
 
-    var box = block.connectorZone();
-    box = new Box(
-        box.x1 + e.clientX - grabPoint.x,
-        box.y1 + e.clientY - grabPoint.y,
-        box.x2 + e.clientX - grabPoint.x,
-        box.y2 + e.clientY - grabPoint.y
-    );
+    var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
 
-    var b = workspace.findTouchingBlock(box);
+    var r = workspace.findTouchingBlock(block, offset);
 
-    if (b !== selected) {
-        if (selected) {
+
+
+    if(r) {
+
+        if(selected && (selected !== r.block)) {
             selected.highlightBottomConnector(false);
             selected.highlightTopConnector(false);
         }
-        selected = b;
-        if (selected) {
+
+        selected = r.block;
+        if(r.position == 'top') {
+            selected.highlightTopConnector(true);
+            selected.highlightBottomConnector(false);
+            block.highlightTopConnector(false);
+            block.highlightBottomConnector(true);
+        } else {
             selected.highlightBottomConnector(true);
+            selected.highlightTopConnector(false);
+            block.highlightTopConnector(true);
+            block.highlightBottomConnector(false);
         }
+    } else {
+        if(selected)
+        {
+            selected.highlightBottomConnector(false);
+            selected.highlightTopConnector(false);
+            selected = null;
+        }
+        block.highlightTopConnector(false);
+        block.highlightBottomConnector(false);
     }
 
 });
@@ -206,10 +240,16 @@ function Workspace(parentElement, blocks) {
         return top;
     }
 
-    this.findTouchingBlock = (boxScreen) => {
+    this.findTouchingBlock = (block, offset) => {
         var match = null;
+        var position;
+        
+        var box = block.connectorZone().translate(offset.x, offset.y);
 
-        function matched(block, top) {
+        var boxTop = block.connectorZoneTop().translate(offset.x, offset.y); 
+        var boxBottom = block.connectorZoneBottom().translate(offset.x, offset.y); 
+
+        function matched(block, p) {
             // check which stack is on top.
             if (match) {
                 if (match.top.group.position() > block.top.group.position())
@@ -217,96 +257,57 @@ function Workspace(parentElement, blocks) {
             }
 
             match = block;
+            position = p;
         }
 
         this.blockTree.map((list) => {
-            var a = list.group.point(boxScreen.x1, boxScreen.y1);
-            var b = list.group.point(boxScreen.x2, boxScreen.y2);
-            var c = list.next.element.point(a.x, a.y);
-            var d = list.next.element.point(b.x, b.y);
-            var box = new Box(a.x, a.y, b.x, b.y );
+
+            // Transform box to local coordinate system
+            var b = box.transformWithElement(list.group);
             
-            console.log('y1:' + boxScreen.y1 + '/' + a.y+ '/' + box.y1 + '/' + list.next.element.y() + '    y2:' + boxScreen.y2 + '/' + box.y2);
+            // Check if box overlaps with the possible hooks in the group
+            if (!list.box.overlaps(b)) return;
 
-            if (!list.box.overlaps(box)) return;
+            // Transform upper and lower boxes to the local coordinate system
+            var bT = boxTop.transformWithElement(list.group);
+            var bB = boxBottom.transformWithElement(list.group);
 
+            // Move through linked list
             while (list.next) {
-
                 list = list.next;
-                if (list.connectorZone().overlaps(box)) {
-                    matched(list);
-                    return;
+
+
+                // Bottom of local with top of new 
+                if(list.connectorZoneBottom().overlaps(bT)){
+                    matched(list, 'bottom');
+                    break;
+                } else if(list.connectorZoneTop().overlaps(bB)) {
+                    matched(list, 'top');
+                    break;
                 }
+
             }
+
+            return;
         });
 
-
-        return match;
+        if(match)
+            return { block: match, position: position };
+        return null;
 
     }
-    /*
-        this.findTouchingBlock = (x, y) => {
-            var match = null;
-    
-            function matched(block) {
-                // check which stack is on top.
-                if (match) {
-                    if (match.top.group.position() > block.top.group.position())
-                        return;
-                }
-                 match = block;
-            }
-    
-            //like map but with escape? 
-            this.blockTree.map((list) => {
-                var p = list.group.point(x, y);
-    
-                //If not inside group, skip
-                if (!list.group.rbox()) {
-                    return;
-                }
-    
-                while (list.next) {
-                    list = list.next;
-                    // if touching :
-                    p = list.element.point(x, y);
-                    if (list.element.inside(p.x, p.y)) {
-                        // touching
-                        matched(list);
-                        break;
-                    } else if (p.y < 0) {
-                        // In the middle
-                        if (p.x <= list.element.x()) matched(list);
-                        break;
-                    }
-                }
-            });
-    
-            return match;
-        }
-    
-    */
-    this.addBlock = (block, screenPoint, grabPoint) => {
+
+    this.addBlock = (block, offset) => {
         // Add block to list
 
-
-        var box = block.connectorZone();
-        box = new Box(
-            box.x1 + screenPoint.x - grabPoint.x,
-            box.y1 + screenPoint.y - grabPoint.y,
-            box.x2 + screenPoint.x - grabPoint.x,
-            box.y2 + screenPoint.y - grabPoint.y
-        );
-
-        var t = workspace.findTouchingBlock(box);
-
-        console.log(t);
-
+        var r = workspace.findTouchingBlock(block, offset);
+        
         // Are we adding to an existing stack?
-        if (t) {
+        if (r) {
+            var t = r.block;
             // Existing Stack
             // If the insertion point is above the half way line of the block, insert above!
-            if (t.connectorZoneTop().overlaps(block.connectorZoneTop())) t = t.previous;
+            if (r.position == 'top') t = t.previous;
 
             // Insert the block in the linked list
             var n = t.next;
@@ -323,9 +324,9 @@ function Workspace(parentElement, blocks) {
             var g = { next: block.copy() };
 
             // Set stack position
-            var p = this.svg.point(screenPoint.x, screenPoint.y);
-            g.x = p.x - grabPoint.x;
-            g.y = p.y - grabPoint.y;
+            var p = this.svg.point(offset.x, offset.y);
+            g.x = p.x;
+            g.y = p.y;
 
             // Insert the new block into the stack linked list
             g.next.previous = g;
