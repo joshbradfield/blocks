@@ -302,6 +302,11 @@ function Workspace(parentElement, blocks) {
 
         var r = workspace.findTouchingBlock(block, offset);
         
+        
+       // Position relative to svg
+        var p = this.svg.point(offset.x, offset.y);
+
+
         // Are we adding to an existing stack?
         if (r) {
             var t = r.block;
@@ -310,7 +315,7 @@ function Workspace(parentElement, blocks) {
             if (r.position == 'top') t = t.previous;
 
             if(t.top === t) {
-                t.y -= block.element.height() + this.spacingStandard;
+                t.y = Math.max(0, t.y - (block.element.height() + this.spacingStandard));
             }
 
             // Insert the block in the linked list
@@ -321,17 +326,18 @@ function Workspace(parentElement, blocks) {
             t.next.next = n;
             if (n) n.previous = block;
 
-        } else {
+        } else if(((p.x + block.element.width()/2) < 0) || ((p.y + block.element.height()/2) < 0)) {
+            // not inside the screen, get rid of!
+        }
+        else {
             // New Stack
 
             // Create a new top node.
             var g = { next: block.copy() };
 
-            // Set stack position
-            var p = this.svg.point(offset.x, offset.y);
-            g.x = p.x;
-            g.y = p.y;
-
+            g.x = Math.max(p.x,0);
+            g.y = Math.max(p.y,0);
+            
             // Insert the new block into the stack linked list
             g.next.previous = g;
             g.next.top = g;
