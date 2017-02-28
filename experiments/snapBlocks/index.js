@@ -83,6 +83,8 @@ var workspace = new Workspace(workspaceEl, [[new StandardBlock(), new StandardBl
 // Create a copy of the standard block, and add it to our toolbox div.
 var toolBox = new Toolbox(toolboxEl, new StandardBlock("toolBox"));
 
+//workspace.enableDrag(toolBox.block);
+
 toolBox.block.element.on('dragFromToolbox-finished', (ev) => {
 
     // extract variables passed to the event
@@ -157,74 +159,198 @@ function relativePoint(e, element) {
     return element.point(e.clientX, e.clientY);
 }
 
-// Enables drag on a SVG element inside a SVG block
-function enableDragOnSVGElement(element) {
-    element.on('mousedown.drag', startDrag);
-    element.on('touchstart.drag', startDrag);
-
-    var grabPoint = 0;
-
-
-    function startDrag(e) {
-
-        // check for left button
-        if ((e.type == 'click' || e.type == 'mousedown' || e.type == 'mousemove')
-            && ((e.which || e.buttons) != 1)) {
-            return;
-        }
-
-        // Prevent default behaviour
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Find the position of the mouse relative to the block
-        grabPoint = relativePoint(e, element);
-
-        // Bring the block to the forground
-        element.front();
-
-        // apply draggable css
-        element.addClass('elementBeingDragged');
-
-        // add drag and end events to window
-        SVG.on(window, 'mousemove.drag', captureDrag);
-        SVG.on(window, 'touchmove.drag', captureDrag);
-        SVG.on(window, 'mouseup.drag', endDrag);
-        SVG.on(window, 'touchend.drag', endDrag);
-
-        element.fire('drag-started');
-    }
-
-    function captureDrag(e) {
-        var newPoint = relativePoint(e, element);
-        var delx = newPoint.x - grabPoint.x;
-        var dely = newPoint.y - grabPoint.y;
-        element.dmove(delx, dely);
-        element.fire('drag-moved', { e, element, grabPoint, newPoint });
-    }
-
-    function endDrag(e) {
-        captureDrag(e);
-
-        // unbind events
-        SVG.off(window, 'mousemove.drag')
-        SVG.off(window, 'touchmove.drag')
-        SVG.off(window, 'mouseup.drag')
-        SVG.off(window, 'touchend.drag')
-
-        element.removeClass('elementBeingDragged');
-        element.fire('drag-finished', { e, element, grabPoint });
-    }
-
-    return element;
-}
-
 
 function Workspace(parentElement, blocks) {
     this.svg = SVG(parentElement);
     this.blockTree = blocks ? blocks.map((a) => arrayToLinkedList(a)) : [];
     this.spacingStandard = -5;
 
+                function f (b) {
+                this.b = b;
+                this.connectorZoneTop = () => {
+                    return this.b.next.connectorZoneTop();
+                };
+
+                
+                this.connectorZoneBottom = () => {
+                    return this.b.last.connectorZoneBottom();
+                },
+
+                this.connectorZone = () => {
+                    return this.connectorZoneTop().combine(this.connectorZoneBottom());
+                }
+            };
+
+
+    this.enableDrag = (block) => {
+        var element = block.element;
+
+        var newDiv, newSVG, newElement, newBlock, selected;
+
+        var captureDrag = (e) => {
+            var newPoint = relativePoint(e, newElement);
+            var delx = newPoint.x - grabPoint.x;
+            var dely = newPoint.y - grabPoint.y;
+
+            var rect = newDiv.getBoundingClientRect();
+
+
+            newDiv.setAttribute('style', 'top:' + (rect.top + dely) + 'px;' + 'left:' + (rect.left + delx) + 'px;');
+
+            var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
+
+
+        var r = workspace.findTouchingBlock(new f(newBlock), offset);
+
+
+
+        if(r) {
+
+            if(selected && (selected !== r.block)) {
+                selected.highlightBottomConnector(false);
+                selected.highlightTopConnector(false);
+            }
+
+            selected = r.block;
+            if(r.position == 'top') {
+                selected.highlightTopConnector(true);
+                selected.highlightBottomConnector(false);
+                block.highlightTopConnector(false);
+                block.highlightBottomConnector(true);
+            } else {
+                selected.highlightBottomConnector(true);
+                selected.highlightTopConnector(false);
+                block.highlightTopConnector(true);
+                block.highlightBottomConnector(false);
+            }
+        } else {
+            if(selected)
+            {
+                selected.highlightBottomConnector(false);
+                selected.highlightTopConnector(false);
+                selected = null;
+            }
+            block.highlightTopConnector(false);
+            block.highlightBottomConnector(false);
+        }
+
+            element.fire('dragW-moved', { e, newBlock, grabPoint, newPoint });
+
+        }
+
+        var startDrag = (e) => {
+
+            // check for left button
+            if ((e.type == 'click' || e.type == 'mousedown' || e.type == 'mousemove')
+                && ((e.which || e.buttons) != 1)) {
+                return;
+            }
+
+            // Prevent default behaviour
+            e.preventDefault();
+            e.stopPropagation();
+
+            // set grabPoint
+            grabPoint = relativePoint(e, block.element);
+
+            // detach from main tree
+            if((block.top === block) || (block.top === block.previous)) {
+                // Top of tree
+                var group = block.top
+                _.remove(this.blockTree, group);
+                
+            } else {
+                // Somewhere else
+                group = {};
+                group.top = group;
+                group.next = block;
+
+                block.previous.next = null;
+                block.previous = group;
+                
+                var b = block;
+                while(b) {
+                    b.top = group;
+                    group.last = b;
+
+                    b = b.next;
+                }
+            }           
+
+            // Create new Div with SVG and recreate the block.
+            newDiv = document.createElement('div');
+            newDiv.setAttribute('class', 'divDraggable elementBeingDragged');
+
+            // calculate required size of div
+            b = group.next;
+            var height = 0;
+            var width = 0;
+            while(b) {
+                height += b.element.height() + this.spacingStandard;
+                width = Math.max(width, b.element.width());
+                b = b.next;
+            }
+            height-= this.spacingStandard
+
+            document.body.appendChild(newDiv);
+
+            // Create new svg space in the new div
+            newSVG = SVG(newDiv).size(width,height);
+
+            // redraw the moving stack in the new svg
+            newElement = this.drawStack(group, newSVG);
+
+            newBlock = group;
+
+            // IMPORTANT set the new Element size to match the old one, for some reason it doesnt scale correctly...
+            // todo: find out why this doesnt scale automatically...
+            //newElement.size(width,height);
+
+            element.fire('dragW-started', {});
+
+            
+            // redraw the old group.
+            this.redraw();
+
+            //add drag and end events to window
+            SVG.on(window, 'mousemove.dragW', captureDrag);
+            SVG.on(window, 'touchmove.dragW', captureDrag);
+            SVG.on(window, 'mouseup.dragW', endDrag);
+            SVG.on(window, 'touchend.dragW', endDrag);
+
+
+            captureDrag(e);
+        }
+
+        var endDrag = (e) => {
+            captureDrag(e);
+
+            // unbind events
+            SVG.off(window, 'mousemove.dragW')
+            SVG.off(window, 'touchmove.dragW')
+            SVG.off(window, 'mouseup.dragW')
+            SVG.off(window, 'touchend.dragW')
+
+            document.body.removeChild(newDiv);
+
+
+    
+            var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
+
+            // move the block in the workspace
+            workspace.addBlocks(newBlock, offset);
+
+
+            element.fire('dragW-finished', { e, newBlock, grabPoint });
+        }
+
+
+        element.on('mousedown.dragW', startDrag);
+        element.on('touchstart.dragW', startDrag);
+
+        return block;
+    }
+ 
 
     function arrayToLinkedList(array) {
         var top = { array, length: array.length };
@@ -319,12 +445,15 @@ function Workspace(parentElement, blocks) {
             }
 
             // Insert the block in the linked list
-            var n = t.next;
-            t.next = block.copy();
-            t.next.top = t.top;
-            t.next.previous = t;
-            t.next.next = n;
-            if (n) n.previous = block;
+            block.next = t.next;
+            if(t.next) t.next.previous = block;
+            t.next = block;
+
+            block.top = t.top;
+            block.previous = t;
+
+            if(!(block.next)) block.top.last = block;
+
 
         } else if(((p.x + block.element.width()/2) < 0) || ((p.y + block.element.height()/2) < 0)) {
             // not inside the screen, get rid of!
@@ -351,22 +480,79 @@ function Workspace(parentElement, blocks) {
         this.redraw();
     }
 
+    
+    this.addBlocks = (block, offset) => {
+        // Add block to list
+
+        var r = workspace.findTouchingBlock(new f(block), offset);
+        
+       // Position relative to svg
+        var p = this.svg.point(offset.x, offset.y);
+
+        // Are we adding to an existing stack?
+        if (r) {
+            var t = r.block;
+            // Existing Stack
+            // If the insertion point is above the half way line of the block, insert above!
+            if (r.position == 'top') t = t.previous;
+
+            if(t.top === t) {
+                t.y = Math.max(0, t.y - (block.element.height() + this.spacingStandard));
+            }
+
+            // Insert the block in the linked list
+            var n = t.next;
+
+            block.last.next = t.next;
+            if(t.next) t.next.previous = block.last;
+            
+            t.next = block.next;
+            t.next.previous = t;
+
+            var b = block.next;
+            while(b){
+                b.top = t.top;
+                b.top.last = b;
+                b = b.next;
+            }
+
+        } else if(((p.x + block.element.width()/2) < 0) || ((p.y + block.element.height()/2) < 0)) {
+            // not inside the screen, get rid of!
+        }
+        else {
+            // New Stack
+
+            // Create a new top node.
+            var g = block;
+
+            g.x = Math.max(p.x,0);
+            g.y = Math.max(p.y,0);
+            
+            // Insert the new block into the stack linked list
+            g.next.previous = g;
+            g.next.top = g;
+            g.top = g;
+
+            // Add this stack to the block tree
+            this.blockTree.push(g);
+        }
+
+        // Redraw all of the blocks so that the new block gets an svg element.
+        this.redraw();
+    }
+
     this.copyBlock = (block) => {
 
     }
 
-    this.redraw = () => {
-        this.clearBlocks();
-        this.blockTree.map((list) => {
+    this.drawStack = (list, svg) => {
             var height = 0;
-            var group = this.svg.nested();
-            console.log("Drawing Group");
+            var group = svg.nested();
+
             group.move(list.x || 0, list.y || 0);
 
-            console.log("  x" + list.x + " y" + list.y);
-            console.log("  x" + group.x() + " y" + group.y());
-
             list.group = group;
+            list.element = group;
 
             var box;
 
@@ -381,18 +567,34 @@ function Workspace(parentElement, blocks) {
                 else {
                     box = (list.connectorZone());
                 }
+
+                this.enableDrag(list);
             }
 
+            list.top.last = list;
             list.top.box = box;
 
+            return group;
+    }
+
+    this.redraw = () => {
+        this.clearBlocks();
+        this.blockTree.map((list) => {
+            this.drawStack(list, this.svg);
         });
     }
 
     this.clearBlocks = () => {
         this.svg.clear();
     }
+   
+    // enable drag on blocks
+
 
     this.redraw();
+
+
+
 };
 
 
@@ -416,8 +618,8 @@ function StandardBlock(text) {
         svg.size(svg.rbox().width, svg.rbox().height + 8);
 
         // draw clips
-        this.tC = svg.rect(10, 8).move(10, 0).back().addClass('connectorTop');
-        this.bC = svg.rect(14, 8).move(8, 40).addClass('connectorBottom');
+        this.tC = svg.rect(20, 8).move(10, 0).back().addClass('connectorTop');
+        this.bC = svg.rect(24, 8).move(8, 40).addClass('connectorBottom');
 
         // move text to front
         t.front();
@@ -433,7 +635,6 @@ function StandardBlock(text) {
             this.element.removeClass('highlighted');
         }
     }
-
 
     this.highlightTopConnector = (enable) => {
         if (enable) {
