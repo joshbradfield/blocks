@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+    <head>
+        <script src="../lib/svg.js"></script>
+        <link rel="stylesheet" type="text/css" href="index.css"  />
+    </head>
+    <body>
+        <div id="root"></div>
+        <script>
+        
+        var svg = SVG('root');
+
+        
+        var drawing = svg.nested();
+
+        var a = drawing.rect(100, 25).addClass('standardBlock');
+        var b = a.clone();
+
+        
+        </script>
+    </body>
+</html>
