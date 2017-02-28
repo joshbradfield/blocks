@@ -92,8 +92,8 @@ toolBox.block.element.on('dragFromToolbox-finished', (ev) => {
     var block = ev.detail.newBlock;
     var grabPoint = ev.detail.grabPoint;
 
-    
-    var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
+
+    var offset = { x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y }
 
     // move the block in the workspace
     workspace.addBlock(block, offset);
@@ -109,21 +109,21 @@ toolBox.block.element.on('dragFromToolbox-moved', (ev) => {
     var block = ev.detail.newBlock;
     var grabPoint = ev.detail.grabPoint;
 
-    var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
+    var offset = { x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y }
 
     var r = workspace.findTouchingBlock(block, offset);
 
 
 
-    if(r) {
+    if (r) {
 
-        if(selected && (selected !== r.block)) {
+        if (selected && (selected !== r.block)) {
             selected.highlightBottomConnector(false);
             selected.highlightTopConnector(false);
         }
 
         selected = r.block;
-        if(r.position == 'top') {
+        if (r.position == 'top') {
             selected.highlightTopConnector(true);
             selected.highlightBottomConnector(false);
             block.highlightTopConnector(false);
@@ -135,8 +135,7 @@ toolBox.block.element.on('dragFromToolbox-moved', (ev) => {
             block.highlightBottomConnector(false);
         }
     } else {
-        if(selected)
-        {
+        if (selected) {
             selected.highlightBottomConnector(false);
             selected.highlightTopConnector(false);
             selected = null;
@@ -165,21 +164,21 @@ function Workspace(parentElement, blocks) {
     this.blockTree = blocks ? blocks.map((a) => arrayToLinkedList(a)) : [];
     this.spacingStandard = -5;
 
-                function f (b) {
-                this.b = b;
-                this.connectorZoneTop = () => {
-                    return this.b.next.connectorZoneTop();
-                };
+    function f(b) {
+        this.b = b;
+        this.connectorZoneTop = () => {
+            return this.b.next.connectorZoneTop();
+        };
 
-                
-                this.connectorZoneBottom = () => {
-                    return this.b.last.connectorZoneBottom();
-                },
 
-                this.connectorZone = () => {
-                    return this.connectorZoneTop().combine(this.connectorZoneBottom());
-                }
-            };
+        this.connectorZoneBottom = () => {
+            return this.b.last.connectorZoneBottom();
+        },
+
+            this.connectorZone = () => {
+                return this.connectorZoneTop().combine(this.connectorZoneBottom());
+            }
+    };
 
 
     this.enableDrag = (block) => {
@@ -197,42 +196,41 @@ function Workspace(parentElement, blocks) {
 
             newDiv.setAttribute('style', 'top:' + (rect.top + dely) + 'px;' + 'left:' + (rect.left + delx) + 'px;');
 
-            var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
+            var offset = { x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y }
 
 
-        var r = workspace.findTouchingBlock(new f(newBlock), offset);
+            var r = workspace.findTouchingBlock(new f(newBlock), offset);
 
 
 
-        if(r) {
+            if (r) {
 
-            if(selected && (selected !== r.block)) {
-                selected.highlightBottomConnector(false);
-                selected.highlightTopConnector(false);
-            }
+                if (selected && (selected !== r.block)) {
+                    selected.highlightBottomConnector(false);
+                    selected.highlightTopConnector(false);
+                }
 
-            selected = r.block;
-            if(r.position == 'top') {
-                selected.highlightTopConnector(true);
-                selected.highlightBottomConnector(false);
-                block.highlightTopConnector(false);
-                block.highlightBottomConnector(true);
+                selected = r.block;
+                if (r.position == 'top') {
+                    selected.highlightTopConnector(true);
+                    selected.highlightBottomConnector(false);
+                    block.highlightTopConnector(false);
+                    block.highlightBottomConnector(true);
+                } else {
+                    selected.highlightBottomConnector(true);
+                    selected.highlightTopConnector(false);
+                    block.highlightTopConnector(true);
+                    block.highlightBottomConnector(false);
+                }
             } else {
-                selected.highlightBottomConnector(true);
-                selected.highlightTopConnector(false);
-                block.highlightTopConnector(true);
+                if (selected) {
+                    selected.highlightBottomConnector(false);
+                    selected.highlightTopConnector(false);
+                    selected = null;
+                }
+                block.highlightTopConnector(false);
                 block.highlightBottomConnector(false);
             }
-        } else {
-            if(selected)
-            {
-                selected.highlightBottomConnector(false);
-                selected.highlightTopConnector(false);
-                selected = null;
-            }
-            block.highlightTopConnector(false);
-            block.highlightBottomConnector(false);
-        }
 
             element.fire('dragW-moved', { e, newBlock, grabPoint, newPoint });
 
@@ -254,11 +252,11 @@ function Workspace(parentElement, blocks) {
             grabPoint = relativePoint(e, block.element);
 
             // detach from main tree
-            if((block.top === block) || (block.top === block.previous)) {
+            if ((block.top === block) || (block.top === block.previous)) {
                 // Top of tree
                 var group = block.top
                 _.remove(this.blockTree, group);
-                
+
             } else {
                 // Somewhere else
                 group = {};
@@ -267,15 +265,19 @@ function Workspace(parentElement, blocks) {
 
                 block.previous.next = null;
                 block.previous = group;
-                
+
                 var b = block;
-                while(b) {
+                while (b) {
                     b.top = group;
                     group.last = b;
 
                     b = b.next;
                 }
-            }           
+            }
+
+            // Reset group x and y
+            group.x = 0;
+            group.y = 0;
 
             // Create new Div with SVG and recreate the block.
             newDiv = document.createElement('div');
@@ -285,17 +287,17 @@ function Workspace(parentElement, blocks) {
             b = group.next;
             var height = 0;
             var width = 0;
-            while(b) {
+            while (b) {
                 height += b.element.height() + this.spacingStandard;
                 width = Math.max(width, b.element.width());
                 b = b.next;
             }
-            height-= this.spacingStandard
+            height -= this.spacingStandard
 
             document.body.appendChild(newDiv);
 
             // Create new svg space in the new div
-            newSVG = SVG(newDiv).size(width,height);
+            newSVG = SVG(newDiv).size(width, height);
 
             // redraw the moving stack in the new svg
             newElement = this.drawStack(group, newSVG);
@@ -308,7 +310,7 @@ function Workspace(parentElement, blocks) {
 
             element.fire('dragW-started', {});
 
-            
+
             // redraw the old group.
             this.redraw();
 
@@ -334,8 +336,8 @@ function Workspace(parentElement, blocks) {
             document.body.removeChild(newDiv);
 
 
-    
-            var offset = {x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y}
+
+            var offset = { x: e.clientX - grabPoint.x, y: e.clientY - grabPoint.y }
 
             // move the block in the workspace
             workspace.addBlocks(newBlock, offset);
@@ -350,7 +352,7 @@ function Workspace(parentElement, blocks) {
 
         return block;
     }
- 
+
 
     function arrayToLinkedList(array) {
         var top = { array, length: array.length };
@@ -369,11 +371,11 @@ function Workspace(parentElement, blocks) {
     this.findTouchingBlock = (block, offset) => {
         var match = null;
         var position;
-        
+
         var box = block.connectorZone().translate(offset.x, offset.y);
 
-        var boxTop = block.connectorZoneTop().translate(offset.x, offset.y); 
-        var boxBottom = block.connectorZoneBottom().translate(offset.x, offset.y); 
+        var boxTop = block.connectorZoneTop().translate(offset.x, offset.y);
+        var boxBottom = block.connectorZoneBottom().translate(offset.x, offset.y);
 
         function matched(block, p) {
             // check which stack is on top.
@@ -390,7 +392,7 @@ function Workspace(parentElement, blocks) {
 
             // Transform box to local coordinate system
             var b = box.transformWithElement(list.group);
-            
+
             // Check if box overlaps with the possible hooks in the group
             if (!list.box.overlaps(b)) return;
 
@@ -404,10 +406,10 @@ function Workspace(parentElement, blocks) {
 
 
                 // Bottom of local with top of new 
-                if(list.connectorZoneBottom().overlaps(bT)){
+                if (list.connectorZoneBottom().overlaps(bT)) {
                     matched(list, 'bottom');
                     break;
-                } else if(list.connectorZoneTop().overlaps(bB)) {
+                } else if (list.connectorZoneTop().overlaps(bB)) {
                     matched(list, 'top');
                     break;
                 }
@@ -417,7 +419,7 @@ function Workspace(parentElement, blocks) {
             return;
         });
 
-        if(match)
+        if (match)
             return { block: match, position: position };
         return null;
 
@@ -427,9 +429,9 @@ function Workspace(parentElement, blocks) {
         // Add block to list
 
         var r = workspace.findTouchingBlock(block, offset);
-        
-        
-       // Position relative to svg
+
+
+        // Position relative to svg
         var p = this.svg.point(offset.x, offset.y);
 
 
@@ -440,22 +442,22 @@ function Workspace(parentElement, blocks) {
             // If the insertion point is above the half way line of the block, insert above!
             if (r.position == 'top') t = t.previous;
 
-            if(t.top === t) {
+            if (t.top === t) {
                 t.y = Math.max(0, t.y - (block.element.height() + this.spacingStandard));
             }
 
             // Insert the block in the linked list
             block.next = t.next;
-            if(t.next) t.next.previous = block;
+            if (t.next) t.next.previous = block;
             t.next = block;
 
             block.top = t.top;
             block.previous = t;
 
-            if(!(block.next)) block.top.last = block;
+            if (!(block.next)) block.top.last = block;
 
 
-        } else if(((p.x + block.element.width()/2) < 0) || ((p.y + block.element.height()/2) < 0)) {
+        } else if (((p.x + block.element.width() / 2) < 0) || ((p.y + block.element.height() / 2) < 0)) {
             // not inside the screen, get rid of!
         }
         else {
@@ -464,9 +466,9 @@ function Workspace(parentElement, blocks) {
             // Create a new top node.
             var g = { next: block.copy() };
 
-            g.x = Math.max(p.x,0);
-            g.y = Math.max(p.y,0);
-            
+            g.x = Math.max(p.x, 0);
+            g.y = Math.max(p.y, 0);
+
             // Insert the new block into the stack linked list
             g.next.previous = g;
             g.next.top = g;
@@ -480,13 +482,13 @@ function Workspace(parentElement, blocks) {
         this.redraw();
     }
 
-    
+
     this.addBlocks = (block, offset) => {
         // Add block to list
 
         var r = workspace.findTouchingBlock(new f(block), offset);
-        
-       // Position relative to svg
+
+        // Position relative to svg
         var p = this.svg.point(offset.x, offset.y);
 
         // Are we adding to an existing stack?
@@ -496,7 +498,7 @@ function Workspace(parentElement, blocks) {
             // If the insertion point is above the half way line of the block, insert above!
             if (r.position == 'top') t = t.previous;
 
-            if(t.top === t) {
+            if (t.top === t) {
                 t.y = Math.max(0, t.y - (block.element.height() + this.spacingStandard));
             }
 
@@ -504,19 +506,19 @@ function Workspace(parentElement, blocks) {
             var n = t.next;
 
             block.last.next = t.next;
-            if(t.next) t.next.previous = block.last;
-            
+            if (t.next) t.next.previous = block.last;
+
             t.next = block.next;
             t.next.previous = t;
 
             var b = block.next;
-            while(b){
+            while (b) {
                 b.top = t.top;
                 b.top.last = b;
                 b = b.next;
             }
 
-        } else if(((p.x + block.element.width()/2) < 0) || ((p.y + block.element.height()/2) < 0)) {
+        } else if (((p.x + block.element.width() / 2) < 0) || ((p.y + block.element.height() / 2) < 0)) {
             // not inside the screen, get rid of!
         }
         else {
@@ -525,9 +527,9 @@ function Workspace(parentElement, blocks) {
             // Create a new top node.
             var g = block;
 
-            g.x = Math.max(p.x,0);
-            g.y = Math.max(p.y,0);
-            
+            g.x = Math.max(p.x, 0);
+            g.y = Math.max(p.y, 0);
+
             // Insert the new block into the stack linked list
             g.next.previous = g;
             g.next.top = g;
@@ -546,35 +548,35 @@ function Workspace(parentElement, blocks) {
     }
 
     this.drawStack = (list, svg) => {
-            var height = 0;
-            var group = svg.nested();
+        var height = 0;
+        var group = svg.nested();
 
-            group.move(list.x || 0, list.y || 0);
+        group.move(list.x || 0, list.y || 0);
 
-            list.group = group;
-            list.element = group;
+        list.group = group;
+        list.element = group;
 
-            var box;
+        var box;
 
-            while (list.next) {
-                list = list.next;
-                var e = list.draw(group).move(0, height);
-                height += e.height() + this.spacingStandard;
+        while (list.next) {
+            list = list.next;
+            var e = list.draw(group).move(0, height);
+            height += e.height() + this.spacingStandard;
 
-                if (box) {
-                    box = box.combine(list.connectorZone());
-                }
-                else {
-                    box = (list.connectorZone());
-                }
-
-                this.enableDrag(list);
+            if (box) {
+                box = box.combine(list.connectorZone());
+            }
+            else {
+                box = (list.connectorZone());
             }
 
-            list.top.last = list;
-            list.top.box = box;
+            this.enableDrag(list);
+        }
 
-            return group;
+        list.top.last = list;
+        list.top.box = box;
+
+        return group;
     }
 
     this.redraw = () => {
@@ -587,7 +589,7 @@ function Workspace(parentElement, blocks) {
     this.clearBlocks = () => {
         this.svg.clear();
     }
-   
+
     // enable drag on blocks
 
 
